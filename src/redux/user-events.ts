@@ -7,7 +7,7 @@ interface IUserEvents {
     dateEnd: string
 }
 
-interface IUserEventsReducer {
+interface IUserEventsState {
     byIds: Record<IUserEvents['id'], IUserEvents>
     allIds: IUserEvents['id'][]
 }
@@ -18,7 +18,7 @@ const initialState = {
 }
 
 const userEvetsReducer = (
-    state: IUserEventsReducer = initialState,
+    state: IUserEventsState = initialState,
     action: AnyAction
 ) => {
     switch (action.type) {
