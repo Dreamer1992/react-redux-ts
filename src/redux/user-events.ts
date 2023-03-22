@@ -20,16 +20,17 @@ interface IUserEventsState {
 }
 
 const LOAD_REQUEST = 'userEvents/load_request'
+const LOAD_SUCCESS = 'userEvents/load_success'
+const LOAD_FAILURE = 'userEvents/load_failure'
+
 interface ILoadRequestAction extends Action<typeof LOAD_REQUEST> {}
 
-const LOAD_SUCCESS = 'userEvents/load_success'
 interface ILoadSuccessAction extends Action<typeof LOAD_SUCCESS> {
     payload: {
         events: IUserEvent[]
     }
 }
 
-const LOAD_FAILURE = 'userEvents/load_failure'
 interface ILoadFailureAction extends Action<typeof LOAD_FAILURE> {
     error: string
 }
@@ -54,17 +55,11 @@ export const loadUserEvents =
         }
     }
 
-const selectUserEventsState = (rootState: RootState) => rootState.userEvents
-export const selectUserEventsArray = (rootState: RootState) => {
-    const state = selectUserEventsState(rootState)
-    return state.allIds.map((id) => state.byIds[id])
-}
-
 const CREATE_USER_REQUEST = 'userEvents/create_user_request'
+const CREATE_USER_SUCCESS_REQUEST = 'userEvents/create_user_success_request'
+const CREATE_USER_FAILURE_REQUEST = 'userEvents/create_user_failure_request'
 
 interface ICreateUserAction extends Action<typeof CREATE_USER_REQUEST> {}
-
-const CREATE_USER_SUCCESS_REQUEST = 'userEvents/create_user_success_request'
 
 interface ICreateUserSuccessAction
     extends Action<typeof CREATE_USER_SUCCESS_REQUEST> {
@@ -72,8 +67,6 @@ interface ICreateUserSuccessAction
         event: IUserEvent
     }
 }
-
-const CREATE_USER_FAILURE_REQUEST = 'userEvents/create_user_failure_request'
 
 interface ICreateUserFailureAction
     extends Action<typeof CREATE_USER_FAILURE_REQUEST> {}
@@ -116,23 +109,16 @@ export const createUserEvent =
         }
     }
 
-const initialState = {
-    byIds: {},
-    allIds: [],
-}
-
 const DELETE_USER_REQUEST = 'userEvents/delete_user_request'
+const DELETE_USER_SUCCESS_REQUEST = 'userEvents/delete_user_success_request'
+const DELETE_USER_FAILURE_REQUEST = 'userEvents/delete_user_failure_request'
 
 interface IDeleteUserAction extends Action<typeof DELETE_USER_REQUEST> {}
-
-const DELETE_USER_SUCCESS_REQUEST = 'userEvents/delete_user_success_request'
 
 interface IDeleteUserSuccessAction
     extends Action<typeof DELETE_USER_SUCCESS_REQUEST> {
     payload: { id: IUserEvent['id'] }
 }
-
-const DELETE_USER_FAILURE_REQUEST = 'userEvents/delete_user_failure_request'
 
 interface IDeleteUserFailureAction
     extends Action<typeof DELETE_USER_FAILURE_REQUEST> {}
@@ -165,12 +151,78 @@ export const deleteUserEvent =
         }
     }
 
+const UPDATE_USER_REQUEST = 'userEvents/update_user_request'
+const UPDATE_USER_SUCCESS_REQUEST = 'userEvents/update_user_success_request'
+const UPDATE_USER_FAILURE_REQUEST = 'userEvents/update_user_failure_request'
+
+interface IUpdateUserRequestAction extends Action<typeof UPDATE_USER_REQUEST> {}
+
+interface IUpdateUserSuccessAction
+    extends Action<typeof UPDATE_USER_SUCCESS_REQUEST> {
+    payload: { event: IUserEvent }
+}
+
+interface IUpdateUserFailureAction
+    extends Action<typeof UPDATE_USER_FAILURE_REQUEST> {}
+
+export const updateUserEvent =
+    (
+        event: IUserEvent
+    ): ThunkAction<
+        Promise<void>,
+        RootState,
+        undefined,
+        | IUpdateUserRequestAction
+        | IUpdateUserSuccessAction
+        | IUpdateUserFailureAction
+    > =>
+    async (dispatch) => {
+        dispatch({
+            type: UPDATE_USER_REQUEST,
+        })
+
+        try {
+            const response = await fetch(
+                `http://localhost:3001/events/${event.id}`,
+                {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(event),
+                }
+            )
+            const updatedEvent: IUserEvent = await response.json()
+
+            dispatch({
+                type: UPDATE_USER_SUCCESS_REQUEST,
+                payload: { event: updatedEvent },
+            })
+        } catch (e) {
+            dispatch({
+                type: UPDATE_USER_FAILURE_REQUEST,
+            })
+        }
+    }
+
+const selectUserEventsState = (rootState: RootState) => rootState.userEvents
+export const selectUserEventsArray = (rootState: RootState) => {
+    const state = selectUserEventsState(rootState)
+    return state.allIds.map((id) => state.byIds[id])
+}
+
+const initialState = {
+    byIds: {},
+    allIds: [],
+}
+
 const userEvetsReducer = (
     state: IUserEventsState = initialState,
     action:
         | ILoadSuccessAction
         | ICreateUserSuccessAction
         | IDeleteUserSuccessAction
+        | IUpdateUserSuccessAction
 ) => {
     switch (action.type) {
         case LOAD_SUCCESS: {
@@ -207,6 +259,14 @@ const userEvetsReducer = (
             }
             delete newState.byIds[id]
             return newState
+        }
+        case UPDATE_USER_SUCCESS_REQUEST: {
+            const { event: updatedEvent } = action.payload
+
+            return {
+                ...state,
+                byIds: { ...state.byIds, [updatedEvent.id]: updatedEvent },
+            }
         }
         default:
             return state
