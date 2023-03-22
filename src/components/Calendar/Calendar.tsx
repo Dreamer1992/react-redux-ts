@@ -76,7 +76,7 @@ const Calendar = ({ events, loadUserEvents }: IProps) => {
     if (events.length) {
         groupedEvents = groupEventsByDay(events)
         sortedGroupKeys = Object.keys(groupedEvents).sort(
-            (date1, date2) => +new Date(date1) - +new Date(date2)
+            (date1, date2) => +new Date(date2) - +new Date(date1)
         )
     }
 

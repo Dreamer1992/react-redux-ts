@@ -1,6 +1,9 @@
 import { Action } from 'redux'
 import { ThunkAction } from 'redux-thunk'
 
+// sleectors
+import { selectDateStart } from './recorder'
+
 // types
 import { RootState } from './store'
 
@@ -57,6 +60,64 @@ export const selectUserEventsArray = (rootState: RootState) => {
     return state.allIds.map((id) => state.byIds[id])
 }
 
+const CREATE_USER_REQUEST = 'userEvents/create_user_request'
+
+interface ICreateUserRequest extends Action<typeof CREATE_USER_REQUEST> {}
+
+const CREATE_USER_SUCCESS_REQUEST = 'userEvents/create_user_success_request'
+
+interface ICreateUserSuccessRequest
+    extends Action<typeof CREATE_USER_SUCCESS_REQUEST> {
+    payload: {
+        event: IUserEvent
+    }
+}
+
+const CREATE_USER_FAILURE_REQUEST = 'userEvents/create_user_failure_request'
+
+interface ICreateUserFailureRequest
+    extends Action<typeof CREATE_USER_FAILURE_REQUEST> {}
+
+export const createUserEvent =
+    (): ThunkAction<
+        Promise<void>,
+        RootState,
+        undefined,
+        | ICreateUserRequest
+        | ICreateUserSuccessRequest
+        | ICreateUserFailureRequest
+    > =>
+    async (dispatch, getState) => {
+        dispatch({ type: CREATE_USER_REQUEST })
+
+        try {
+            const dateStart = selectDateStart(getState())
+
+            const event: Omit<IUserEvent, 'id'> = {
+                title: 'No name',
+                dateStart,
+                dateEnd: new Date().toISOString(),
+            }
+
+            const res = await fetch('http://localhost:3001/events', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(event),
+            })
+
+            const createdEvent: IUserEvent = await res.json()
+
+            dispatch({
+                type: CREATE_USER_SUCCESS_REQUEST,
+                payload: { event: createdEvent },
+            })
+        } catch (e) {
+            dispatch({ type: CREATE_USER_FAILURE_REQUEST })
+        }
+    }
+
 const initialState = {
     byIds: {},
     allIds: [],
@@ -64,7 +125,7 @@ const initialState = {
 
 const userEvetsReducer = (
     state: IUserEventsState = initialState,
-    action: ILoadSuccessAction
+    action: ILoadSuccessAction | ICreateUserSuccessRequest
 ) => {
     switch (action.type) {
         case LOAD_SUCCESS: {
@@ -80,6 +141,15 @@ const userEvetsReducer = (
                     },
                     {}
                 ),
+            }
+        }
+        case CREATE_USER_SUCCESS_REQUEST: {
+            const { event } = action.payload
+
+            return {
+                ...state,
+                allIds: [...state.allIds, event.id],
+                byIds: { ...state.byIds, [event.id]: event },
             }
         }
         default:

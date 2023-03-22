@@ -1,14 +1,15 @@
 .calendar {
   display: flex;
   flex-direction: row-reverse;
+  flex-wrap: wrap;
   margin: 0 15px;
   padding: 20px 0;
   overflow-x: auto;
 }
 
 .calendar-day {
-  flex: 0 0 300px;
-  padding: 0 20px;
+  flex: 0 0 calc(25% - 40px);
+  padding: 0 20px 20px;
 }
 
 .calendar-day-label {
