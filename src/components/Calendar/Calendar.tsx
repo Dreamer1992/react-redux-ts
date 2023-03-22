@@ -1,6 +1,9 @@
 import { useEffect } from 'react'
 import { connect, ConnectedProps } from 'react-redux'
 
+// project imports
+import EventItem from './EventItem/EventItem'
+
 // types
 import { RootState } from '../../redux/store'
 import { IUserEvent } from '../../redux/user-events'
@@ -100,20 +103,7 @@ const Calendar = ({ events, loadUserEvents }: IProps) => {
 
                         <div className="calendar-events">
                             {events.map((event) => (
-                                <div key={event.id} className="calendar-event">
-                                    <div className="calendar-event-info">
-                                        <div className="calendar-event-time">
-                                            10:00 - 12:00
-                                        </div>
-                                        <div className="calendar-event-title">
-                                            {event.title}
-                                        </div>
-                                    </div>
-
-                                    <button className="calendar-event-delete-button">
-                                        &times;
-                                    </button>
-                                </div>
+                                <EventItem key={event.id} event={event} />
                             ))}
                         </div>
                     </div>

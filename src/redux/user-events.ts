@@ -62,11 +62,11 @@ export const selectUserEventsArray = (rootState: RootState) => {
 
 const CREATE_USER_REQUEST = 'userEvents/create_user_request'
 
-interface ICreateUserRequest extends Action<typeof CREATE_USER_REQUEST> {}
+interface ICreateUserAction extends Action<typeof CREATE_USER_REQUEST> {}
 
 const CREATE_USER_SUCCESS_REQUEST = 'userEvents/create_user_success_request'
 
-interface ICreateUserSuccessRequest
+interface ICreateUserSuccessAction
     extends Action<typeof CREATE_USER_SUCCESS_REQUEST> {
     payload: {
         event: IUserEvent
@@ -75,7 +75,7 @@ interface ICreateUserSuccessRequest
 
 const CREATE_USER_FAILURE_REQUEST = 'userEvents/create_user_failure_request'
 
-interface ICreateUserFailureRequest
+interface ICreateUserFailureAction
     extends Action<typeof CREATE_USER_FAILURE_REQUEST> {}
 
 export const createUserEvent =
@@ -83,9 +83,7 @@ export const createUserEvent =
         Promise<void>,
         RootState,
         undefined,
-        | ICreateUserRequest
-        | ICreateUserSuccessRequest
-        | ICreateUserFailureRequest
+        ICreateUserAction | ICreateUserSuccessAction | ICreateUserFailureAction
     > =>
     async (dispatch, getState) => {
         dispatch({ type: CREATE_USER_REQUEST })
@@ -123,9 +121,56 @@ const initialState = {
     allIds: [],
 }
 
+const DELETE_USER_REQUEST = 'userEvents/delete_user_request'
+
+interface IDeleteUserAction extends Action<typeof DELETE_USER_REQUEST> {}
+
+const DELETE_USER_SUCCESS_REQUEST = 'userEvents/delete_user_success_request'
+
+interface IDeleteUserSuccessAction
+    extends Action<typeof DELETE_USER_SUCCESS_REQUEST> {
+    payload: { id: IUserEvent['id'] }
+}
+
+const DELETE_USER_FAILURE_REQUEST = 'userEvents/delete_user_failure_request'
+
+interface IDeleteUserFailureAction
+    extends Action<typeof DELETE_USER_FAILURE_REQUEST> {}
+
+export const deleteUserEvent =
+    (
+        id: IUserEvent['id']
+    ): ThunkAction<
+        Promise<void>,
+        RootState,
+        undefined,
+        IDeleteUserAction | IDeleteUserSuccessAction | IDeleteUserFailureAction
+    > =>
+    async (dispatch) => {
+        try {
+            dispatch({ type: DELETE_USER_REQUEST })
+
+            const res = await fetch(`http://localhost:3001/events/${id}`, {
+                method: 'DELETE',
+            })
+
+            if (res.ok) {
+                dispatch({
+                    type: DELETE_USER_SUCCESS_REQUEST,
+                    payload: { id },
+                })
+            }
+        } catch (e) {
+            dispatch({ type: DELETE_USER_FAILURE_REQUEST })
+        }
+    }
+
 const userEvetsReducer = (
     state: IUserEventsState = initialState,
-    action: ILoadSuccessAction | ICreateUserSuccessRequest
+    action:
+        | ILoadSuccessAction
+        | ICreateUserSuccessAction
+        | IDeleteUserSuccessAction
 ) => {
     switch (action.type) {
         case LOAD_SUCCESS: {
@@ -151,6 +196,17 @@ const userEvetsReducer = (
                 allIds: [...state.allIds, event.id],
                 byIds: { ...state.byIds, [event.id]: event },
             }
+        }
+        case DELETE_USER_SUCCESS_REQUEST: {
+            const { id } = action.payload
+
+            const newState = {
+                ...state,
+                byIds: { ...state.byIds },
+                allIds: state.allIds.filter((storedId) => storedId !== id),
+            }
+            delete newState.byIds[id]
+            return newState
         }
         default:
             return state
